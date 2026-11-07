@@ -1,19 +1,11 @@
 "use client"
 
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { CheckCircle2, Link2 } from "lucide-react"
+import { Link2 } from "lucide-react"
 
 import { submitAnalysis } from "@/lib/data"
 import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
 import {
   Field,
   FieldDescription,
@@ -64,12 +56,10 @@ function parseChannelUrl(input: string): { error: string } | { url: string } {
 }
 
 export function AnalysisForm({ initialUrl = "" }: { initialUrl?: string }) {
+  const router = useRouter()
   const [value, setValue] = useState(initialUrl)
   const [error, setError] = useState<string>()
-  const [state, setState] = useState<"editing" | "submitting" | "queued">(
-    "editing"
-  )
-  const [queuedUrl, setQueuedUrl] = useState("")
+  const [state, setState] = useState<"editing" | "submitting">("editing")
 
   function validate() {
     const result = parseChannelUrl(value)
@@ -84,43 +74,15 @@ export function AnalysisForm({ initialUrl = "" }: { initialUrl?: string }) {
 
     setState("submitting")
     try {
-      await submitAnalysis(result.url)
-      setQueuedUrl(result.url)
-      setState("queued")
+      const { id } = await submitAnalysis(result.url)
+      // Stay in the submitting state while navigating to avoid a double submit.
+      router.push(`/analyses/${id}?channel=${encodeURIComponent(result.url)}`)
     } catch {
       setError(
         "Couldn't start the analysis. Check your connection and try again."
       )
       setState("editing")
     }
-  }
-
-  if (state === "queued") {
-    return (
-      <Empty className="border" role="status">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CheckCircle2 className="text-success" />
-          </EmptyMedia>
-          <EmptyTitle>Analysis queued</EmptyTitle>
-          <EmptyDescription className="break-all">{queuedUrl}</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent className="flex-row justify-center">
-          <Button asChild>
-            <Link href="/">Back to dashboard</Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setValue("")
-              setState("editing")
-            }}
-          >
-            Analyze another creator
-          </Button>
-        </EmptyContent>
-      </Empty>
-    )
   }
 
   const submitting = state === "submitting"

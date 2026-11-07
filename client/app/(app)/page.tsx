@@ -158,7 +158,12 @@ export default async function DashboardPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="truncate font-medium">{a.creator.name}</p>
+                        <Link
+                          href={`/analyses/${a.id}`}
+                          className="block truncate font-medium hover:underline"
+                        >
+                          {a.creator.name}
+                        </Link>
                         <p className="truncate text-xs text-muted-foreground">
                           {a.creator.handle} ·{" "}
                           {compact.format(a.creator.subscribers)} subscribers

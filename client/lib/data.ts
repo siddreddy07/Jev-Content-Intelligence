@@ -89,6 +89,10 @@ const mockAnalyses: Analysis[] = [
   },
 ]
 
+export async function getAnalysis(id: string) {
+  return mockAnalyses.find((a) => a.id === id)
+}
+
 export async function getDashboard() {
   const analyses = [...mockAnalyses].sort((a, b) =>
     b.startedAt.localeCompare(a.startedAt)

@@ -141,7 +141,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbPage className="font-medium">
-                  {titles[pathname] ?? "Jev"}
+                  {titles[pathname] ??
+                    (pathname.startsWith("/analyses/")
+                      ? "Analysis progress"
+                      : "Jev")}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
