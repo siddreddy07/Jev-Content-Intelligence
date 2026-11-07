@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, ArrowUpRight, AudioLines, ScanSearch } from "lucide-react"
+import { ArrowRight, ChevronRight, ScanSearch } from "lucide-react"
 
 import { TrendArea } from "@/components/charts"
 import { StatusBadge } from "@/components/status-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -24,6 +23,15 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
+import {
   Table,
   TableBody,
   TableCell,
@@ -33,7 +41,6 @@ import {
 } from "@/components/ui/table"
 import { analysisHref, getDashboard } from "@/lib/data"
 import { computeRun, initialElapsed } from "@/lib/pipeline"
-import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = { title: "Dashboard" }
 
@@ -52,31 +59,6 @@ const initials = (name: string) =>
     .map((w) => w[0])
     .join("")
 
-/** Big number with a quieter unit, as in the design reference. */
-function BigNumber({
-  value,
-  unit,
-  className,
-}: {
-  value: string
-  unit?: string
-  className?: string
-}) {
-  return (
-    <p
-      className={cn(
-        "font-heading font-medium tracking-tight tabular-nums",
-        className
-      )}
-    >
-      {value}
-      {unit && (
-        <span className="text-[0.55em] text-muted-foreground">{unit}</span>
-      )}
-    </p>
-  )
-}
-
 export default async function DashboardPage() {
   const { stats, analyses } = await getDashboard()
 
@@ -88,295 +70,218 @@ export default async function DashboardPage() {
   const featured = analyses.find((a) => a.status === "running") ?? analyses[0]
   const run = featured ? computeRun(initialElapsed(featured.status)) : null
   const percent = run ? Math.round(run.overall * 100) : 0
+  const stepNumber = run ? (run.current === null ? 8 : run.current + 1) : 0
+  const recent = analyses.slice(0, 5)
 
   const tiles = [
-    { label: "Creators analyzed", value: String(stats.creatorsAnalyzed) },
+    { label: "Creators", value: String(stats.creatorsAnalyzed) },
     { label: "Videos reviewed", value: compact.format(stats.videosAnalyzed) },
     {
       label: "Best vs recent",
-      value: stats.averageLift === null ? "–" : `+${stats.averageLift}`,
-      unit: stats.averageLift === null ? undefined : "%",
-      hint: "Average across creators",
+      value: stats.averageLift === null ? "–" : `+${stats.averageLift}%`,
     },
     { label: "In progress", value: String(stats.inProgress) },
   ]
 
   return (
-    <div className="space-y-8">
-      <section className="grid gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="space-y-5">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-muted-foreground">
-                Updated just now
-              </Badge>
-              <Badge variant="secondary">{top.length} creators</Badge>
-            </div>
-            <h1 className="text-3xl font-semibold md:text-4xl">
-              Top performing creators
-            </h1>
-            <p className="max-w-xl text-muted-foreground">
-              Creators whose best videos beat their newest ones by the widest
-              margin. Open one to see which openings made the difference.
-            </p>
-          </div>
+    <div className="space-y-4 @3xl/main:space-y-6">
+      <header className="space-y-0.5">
+        <h1 className="font-heading text-xl font-medium @3xl/main:text-3xl">
+          Dashboard
+        </h1>
+        <p className="text-xs text-muted-foreground @3xl/main:text-sm">
+          Which opening lines win, across the creators you&apos;ve analyzed.
+        </p>
+      </header>
 
-          {top.length === 0 ? (
-            <Empty className="rounded-3xl border border-dashed">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <ScanSearch />
-                </EmptyMedia>
-                <EmptyTitle>No finished analyses yet</EmptyTitle>
-                <EmptyDescription>
-                  Analyze a channel and its results will appear here.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <ul className="grid gap-4 @2xl/main:grid-cols-3">
-              {top.map((a) => (
-                <li key={a.id}>
-                  <Card className="h-full gap-3 rounded-3xl py-0 pt-5">
-                    <CardHeader className="flex-row items-start justify-between gap-3 px-5">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Avatar className="size-10 rounded-xl after:rounded-xl">
-                          <AvatarFallback className="rounded-xl bg-accent text-sm font-medium text-accent-foreground">
-                            {initials(a.creator.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <CardTitle className="truncate font-heading text-base">
-                            {a.creator.name}
-                          </CardTitle>
-                          <CardDescription className="truncate">
-                            {a.creator.handle}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Button
-                        asChild
-                        size="icon"
-                        variant="outline"
-                        className="size-8 shrink-0 rounded-full"
-                      >
-                        <Link
-                          href={analysisHref(a)}
-                          aria-label={`Open ${a.creator.name} snapshot`}
-                        >
-                          <ArrowUpRight className="size-4" />
-                        </Link>
-                      </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-2 px-5 pb-0">
-                      <p className="text-sm text-muted-foreground">
-                        Best vs recent
-                      </p>
-                      <BigNumber
-                        value={`+${a.performanceLift}`}
-                        unit="%"
-                        className="text-5xl"
-                      />
-                      <p className="inline-flex items-center rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
-                        {compact.format(a.creator.subscribers)} subscribers
-                      </p>
-                    </CardContent>
-                    <TrendArea
-                      minimal
-                      seriesLabel="Relative views"
-                      data={a.trend!.map((value, i) => ({
-                        label: `Video ${i + 1}`,
-                        value,
-                      }))}
-                      className="-mt-1 h-24 w-full"
-                    />
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
+      <div className="grid grid-cols-1 gap-3 @4xl/main:grid-cols-[minmax(0,1fr)_20rem] @4xl/main:gap-6">
+        {/* Start a new analysis. */}
         <Card
-          className="relative min-h-72 justify-between gap-6 rounded-3xl border border-primary/25 bg-card py-6"
+          className="gap-3 rounded-xl border border-primary/25 bg-card py-4 @3xl/main:rounded-2xl @4xl/main:col-start-2 @4xl/main:row-start-1"
           style={{
             backgroundImage:
-              "radial-gradient(120% 80% at 100% 100%, oklch(0.5 0.16 292 / 0.5), transparent 62%)",
+              "radial-gradient(120% 80% at 100% 100%, oklch(0.5 0.16 292 / 0.45), transparent 62%)",
           }}
         >
-          <CardHeader className="space-y-3 px-6">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <AudioLines className="size-5" aria-hidden />
-            </span>
-            <CardTitle className="font-heading text-2xl leading-tight">
-              Analyze any YouTube channel
+          <CardHeader className="space-y-1 px-4">
+            <CardTitle className="font-heading text-base @3xl/main:text-lg">
+              Analyze a YouTube channel
             </CardTitle>
-            <CardDescription>
-              Paste a link. In about ten minutes you&apos;ll see which opening
-              lines win.
+            <CardDescription className="text-xs @3xl/main:text-sm">
+              Paste a link to see which openings win.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 px-6">
+          <CardContent className="px-4">
             {/* Plain GET form: /analyze reads ?url= and owns the validation. */}
-            <form action="/analyze" className="space-y-2">
+            <form
+              action="/analyze"
+              className="flex flex-col gap-2 @md/main:flex-row @4xl/main:flex-col"
+            >
               <Input
                 name="url"
                 placeholder="youtube.com/@channelname"
                 aria-label="YouTube channel link"
                 inputMode="url"
                 autoComplete="off"
-                className="h-11 rounded-xl bg-background/60"
+                className="bg-background/60"
               />
-              <Button type="submit" size="lg" className="w-full rounded-xl">
-                Analyze channel
+              <Button type="submit">
+                Analyze
                 <ArrowRight className="size-4" />
               </Button>
             </form>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="w-full rounded-xl bg-background/30"
-            >
-              <Link href="/analyze?url=youtube.com/@mayabuilds">
-                Try a sample channel
-              </Link>
-            </Button>
           </CardContent>
         </Card>
-      </section>
 
-      {featured && run && (
-        <section
-          aria-labelledby="yours"
-          className="space-y-4 rounded-3xl border bg-card/40 p-3 sm:p-5"
-        >
-          <div className="flex items-center justify-between gap-4 px-1">
-            <h2
-              id="yours"
-              className="text-base font-medium text-muted-foreground"
-            >
-              Your analyses
-            </h2>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/analyses">
-                View all {analyses.length}
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <Card className="rounded-2xl p-0">
-            <div className="grid gap-6 p-5 sm:p-6 @3xl/main:grid-cols-[minmax(0,1fr)_20rem]">
-              <div className="space-y-5">
-                <p className="text-sm text-muted-foreground">
-                  Started {shortDate.format(new Date(featured.startedAt))}
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h3 className="font-heading text-3xl font-medium">
-                    {featured.creator.name}
-                  </h3>
-                  <StatusBadge value={featured.status} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">
-                    Overall progress
-                  </p>
-                  <BigNumber
-                    value={String(percent)}
-                    unit="%"
-                    className="text-6xl"
-                  />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button asChild size="lg">
-                    <Link href={analysisHref(featured)}>
-                      {featured.status === "completed"
-                        ? "View snapshot"
-                        : "View progress"}
-                    </Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline">
-                    <Link href="/analyses">All analyses</Link>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4 rounded-2xl border bg-background/40 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-heading text-lg">Pipeline</p>
-                    <p className="text-sm text-muted-foreground">
-                      {run.current === null
-                        ? "All steps complete"
-                        : run.stages[run.current].title}
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="tabular-nums">
-                    {run.current === null ? "8" : run.current + 1} of 8
-                  </Badge>
-                </div>
-                <ol className="flex gap-1.5" aria-label="Pipeline steps">
-                  {run.stages.map((s) => (
-                    <li
-                      key={s.title}
-                      title={`${s.title}: ${s.status}`}
-                      className={cn(
-                        "h-9 flex-1 rounded-md",
-                        s.status === "completed" && "bg-primary",
-                        s.status === "running" &&
-                          "bg-primary/60 motion-safe:animate-pulse",
-                        s.status === "failed" && "bg-destructive",
-                        s.status === "pending" && "bg-muted"
-                      )}
-                    >
-                      <span className="sr-only">
-                        {s.title}: {s.status}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Discovery</span>
-                  <span>Snapshot</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <dl className="grid grid-cols-2 gap-3 @3xl/main:grid-cols-4">
+        <div className="min-w-0 space-y-3 @3xl/main:space-y-4 @4xl/main:col-start-1 @4xl/main:row-span-2 @4xl/main:row-start-1">
+          {/* One strip of totals. */}
+          <dl className="grid grid-cols-2 divide-x divide-y rounded-xl border bg-card @3xl/main:grid-cols-4 @3xl/main:divide-y-0 @3xl/main:rounded-2xl">
             {tiles.map((t) => (
-              <Card key={t.label} className="gap-3 rounded-2xl py-4">
-                <CardHeader className="flex-row items-center justify-between gap-2 px-4">
-                  <dt className="text-sm text-muted-foreground">{t.label}</dt>
-                  <Badge variant="secondary" className="shrink-0">
-                    All time
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-1 px-4">
-                  <dd>
-                    <BigNumber
-                      value={t.value}
-                      unit={t.unit}
-                      className="text-4xl"
-                    />
-                  </dd>
-                  {t.hint && (
-                    <dd className="text-xs text-muted-foreground">{t.hint}</dd>
-                  )}
-                </CardContent>
-              </Card>
+              <div
+                key={t.label}
+                className="min-w-0 px-3 py-2.5 @3xl/main:px-4 @3xl/main:py-3"
+              >
+                <dt className="truncate text-[11px] text-muted-foreground @3xl/main:text-xs">
+                  {t.label}
+                </dt>
+                <dd className="font-heading text-lg font-medium tabular-nums @3xl/main:text-2xl">
+                  {t.value}
+                </dd>
+              </div>
             ))}
           </dl>
-        </section>
-      )}
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Recent analyses</h2>
+          {/* Top creators. */}
+          <Card className="gap-1 rounded-xl py-3 @3xl/main:rounded-2xl @3xl/main:py-4">
+            <CardHeader className="px-4">
+              <CardTitle className="text-sm font-medium @3xl/main:text-base">
+                Top creators
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Best videos vs newest videos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-2 @3xl/main:px-3">
+              {top.length === 0 ? (
+                <Empty className="border border-dashed">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <ScanSearch />
+                    </EmptyMedia>
+                    <EmptyTitle>No finished analyses yet</EmptyTitle>
+                    <EmptyDescription>
+                      Results will appear here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <ItemGroup>
+                  {top.map((a) => (
+                    <Item key={a.id} size="sm" asChild>
+                      <Link
+                        href={analysisHref(a)}
+                        className="hover:bg-muted/50"
+                      >
+                        <ItemMedia>
+                          <Avatar className="size-9 rounded-lg after:rounded-lg">
+                            <AvatarFallback className="rounded-lg bg-accent text-xs font-medium text-accent-foreground">
+                              {initials(a.creator.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </ItemMedia>
+                        <ItemContent className="min-w-0 gap-0">
+                          <ItemTitle className="block w-full truncate text-[13px] @3xl/main:text-sm">
+                            {a.creator.name}
+                          </ItemTitle>
+                          <ItemDescription className="truncate text-xs">
+                            {compact.format(a.creator.subscribers)} subscribers
+                          </ItemDescription>
+                        </ItemContent>
+                        <ItemActions className="gap-3">
+                          <TrendArea
+                            minimal
+                            seriesLabel="Relative views"
+                            data={a.trend!.map((value, i) => ({
+                              label: `Video ${i + 1}`,
+                              value,
+                            }))}
+                            className="h-8 w-16 @3xl/main:w-24"
+                          />
+                          <span className="w-14 text-right font-heading text-base font-medium tabular-nums @3xl/main:text-lg">
+                            +{a.performanceLift}%
+                          </span>
+                        </ItemActions>
+                      </Link>
+                    </Item>
+                  ))}
+                </ItemGroup>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* The analysis to look at next: a name, its step and a progress ring. */}
+        {featured && run && (
+          <Card className="rounded-xl py-0 @3xl/main:rounded-2xl @4xl/main:col-start-2 @4xl/main:row-start-2 @4xl/main:self-start">
+            <Link
+              href={analysisHref(featured)}
+              aria-label={`${featured.creator.name}: step ${stepNumber} of 8. Open`}
+              className="flex items-center gap-3 rounded-[inherit] px-4 py-3 transition-colors outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                {featured.creator.name}
+              </span>
+              <StatusBadge value={featured.status} />
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                {stepNumber}/8
+              </span>
+              <svg
+                viewBox="0 0 36 36"
+                className="size-7 shrink-0 -rotate-90"
+                role="img"
+                aria-label="Progress"
+              >
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15"
+                  fill="none"
+                  strokeWidth="4"
+                  className="stroke-muted"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15"
+                  fill="none"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  pathLength={100}
+                  strokeDasharray={`${percent} 100`}
+                  className="stroke-primary"
+                />
+              </svg>
+            </Link>
+          </Card>
+        )}
+      </div>
+
+      {/* Recent analyses. */}
+      <section aria-labelledby="recent" className="space-y-2">
+        <div className="flex items-center justify-between gap-4">
+          <h2 id="recent" className="text-sm font-medium @3xl/main:text-base">
+            Recent analyses
+          </h2>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/analyses">
+              View all {analyses.length}
+              <ChevronRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
+
         {analyses.length === 0 ? (
-          <Empty className="rounded-3xl border border-dashed">
+          <Empty className="rounded-xl border border-dashed">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <ScanSearch />
@@ -394,59 +299,93 @@ export default async function DashboardPage() {
             </EmptyContent>
           </Empty>
         ) : (
-          <Card className="gap-0 overflow-hidden rounded-2xl py-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="pl-4">Creator</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Best vs recent</TableHead>
-                  <TableHead className="hidden pr-4 text-right @2xl/main:table-cell">
-                    Started
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {analyses.slice(0, 5).map((a) => (
-                  <TableRow key={a.id} className="relative hover:bg-muted/40">
-                    <TableCell className="pl-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="bg-accent text-xs font-medium text-accent-foreground">
-                            {initials(a.creator.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <Link
-                            href={analysisHref(a)}
-                            className="block truncate font-medium after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
-                          >
-                            {a.creator.name}
-                          </Link>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {a.creator.handle}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge value={a.status} />
-                    </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">
-                      {a.performanceLift === null ? (
-                        <span className="text-muted-foreground">–</span>
-                      ) : (
-                        `+${a.performanceLift}%`
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden pr-4 text-right text-muted-foreground @2xl/main:table-cell">
-                      {shortDate.format(new Date(a.startedAt))}
-                    </TableCell>
-                  </TableRow>
+          <>
+            {/* Phones and tablets: compact rows. */}
+            <Card className="gap-0 rounded-xl py-0 @3xl/main:hidden">
+              <ItemGroup>
+                {recent.map((a) => (
+                  <Item
+                    key={a.id}
+                    size="sm"
+                    asChild
+                    className="rounded-none border-0 border-b last:border-b-0 hover:bg-muted/50"
+                  >
+                    <Link href={analysisHref(a)}>
+                      <ItemContent className="min-w-0 gap-0.5">
+                        <ItemTitle className="block w-full truncate text-[13px]">
+                          {a.creator.name}
+                        </ItemTitle>
+                        <ItemDescription className="text-xs">
+                          {shortDate.format(new Date(a.startedAt))}
+                        </ItemDescription>
+                      </ItemContent>
+                      <ItemActions className="gap-3">
+                        {a.performanceLift !== null && (
+                          <span className="font-heading text-sm font-medium tabular-nums">
+                            +{a.performanceLift}%
+                          </span>
+                        )}
+                        <StatusBadge value={a.status} />
+                      </ItemActions>
+                    </Link>
+                  </Item>
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
+              </ItemGroup>
+            </Card>
+
+            {/* Wide content areas: a table. */}
+            <Card className="hidden gap-0 overflow-hidden rounded-2xl py-0 @3xl/main:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="pl-4">Creator</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Best vs recent</TableHead>
+                    <TableHead className="pr-4 text-right">Started</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recent.map((a) => (
+                    <TableRow key={a.id} className="relative hover:bg-muted/40">
+                      <TableCell className="pl-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-8">
+                            <AvatarFallback className="bg-accent text-xs font-medium text-accent-foreground">
+                              {initials(a.creator.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <Link
+                              href={analysisHref(a)}
+                              className="block truncate text-sm font-medium after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+                            >
+                              {a.creator.name}
+                            </Link>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {a.creator.handle}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge value={a.status} />
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {a.performanceLift === null ? (
+                          <span className="text-muted-foreground">–</span>
+                        ) : (
+                          `+${a.performanceLift}%`
+                        )}
+                      </TableCell>
+                      <TableCell className="pr-4 text-right text-muted-foreground">
+                        {shortDate.format(new Date(a.startedAt))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </>
         )}
       </section>
     </div>

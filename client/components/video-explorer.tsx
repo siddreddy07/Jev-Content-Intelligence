@@ -442,7 +442,7 @@ export function VideoExplorer({
             </p>
           </CardHeader>
           <CardContent className="flex gap-2 px-4 @4xl/main:flex-col">
-            <Button asChild size="sm" className="flex-1">
+            <Button asChild size="sm" className="flex-1 p-2">
               <Link href="/analyses/an_02/snapshot?name=Dan%20Reyes">
                 Full snapshot
                 <ArrowRight className="size-4" />
@@ -451,7 +451,7 @@ export function VideoExplorer({
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 bg-background/30"
+              className="flex-1 p-2 bg-background/30"
               onClick={() => {
                 setHook("result-first")
                 setPerformance("all")
