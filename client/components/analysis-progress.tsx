@@ -199,7 +199,9 @@ export function AnalysisProgress({
                 Hook patterns, performance lift and blind spots are ready to
                 review.
                 <Button asChild size="sm">
-                  <Link href={`/analyses/${id}/snapshot`}>
+                  <Link
+                    href={`/analyses/${id}/snapshot?name=${encodeURIComponent(name)}`}
+                  >
                     View creator snapshot
                     <ArrowRight className="size-4" />
                   </Link>
