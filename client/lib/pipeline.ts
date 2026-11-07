@@ -62,6 +62,18 @@ const STAGE_DEFS = [
   },
 ] as const
 
+/** Activity-log line written when each stage finishes. */
+const DONE = [
+  "Found 312 public videos on the channel.",
+  "Read titles, views and dates for 312 videos.",
+  "Chose the 10 most-viewed and 10 newest videos.",
+  "Extracted opening audio from 20 videos.",
+  "Transcribed the opening lines of 20 videos.",
+  "Identified the hook in 20 videos.",
+  "Compared the top 10 with the latest 10.",
+  "Creator snapshot is ready.",
+]
+
 export const TOTAL_SECONDS = STAGE_DEFS.reduce((n, s) => n + s.seconds, 0)
 export const FAIL_STAGE = 3 // the seeded failed run stops at audio extraction
 export const FAIL_MESSAGE = "Audio extraction failed for 12 of 20 videos."
@@ -78,6 +90,10 @@ export type Stage = {
   seconds?: number
   /** 0 to 1 within the stage, while running. */
   progress?: number
+  /** Elapsed second at which the stage finished or failed. */
+  finishedAt?: number
+  /** Activity-log message, once completed. */
+  message?: string
 }
 
 export type Run = {
@@ -123,6 +139,7 @@ export function computeRun(elapsed: number, failAt?: number): Run {
         status: "failed",
         detail: count(def, FAIL_POINT),
         seconds: Math.round(failTime - start),
+        finishedAt: failTime,
       }
     }
     if (failed && i > failAt!) return { ...base, status: "pending" }
@@ -132,6 +149,8 @@ export function computeRun(elapsed: number, failAt?: number): Run {
         status: "completed",
         detail: count(def, 1),
         seconds: def.seconds,
+        finishedAt: start + def.seconds,
+        message: DONE[i],
       }
     }
     if (elapsed > start) {

@@ -406,8 +406,6 @@ export function getSnapshot() {
   }
 }
 
-export type Snapshot = ReturnType<typeof getSnapshot>
-
 export type Performance = "outperforming" | "on-par" | "underperforming"
 
 export const PERFORMANCE: Record<Performance, string> = {

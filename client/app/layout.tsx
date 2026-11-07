@@ -4,6 +4,7 @@ import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { themeInitScript } from "@/lib/theme"
 import { cn } from "@/lib/utils"
 
 const sans = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-sans" })
@@ -28,6 +29,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("font-sans antialiased", sans.variable, display.variable)}
     >
+      <head>
+        {/* Sets the theme class before first paint to avoid a flash. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>

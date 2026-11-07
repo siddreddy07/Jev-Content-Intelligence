@@ -15,9 +15,11 @@ export type Analysis = {
   performanceLift: number | null
   startedAt: string
   failureReason?: string
+  /** Relative views of the creator's videos, oldest to newest. Completed only. */
+  trend?: number[]
 }
 
-const mockAnalyses: Analysis[] = [
+const seed: Omit<Analysis, "trend">[] = [
   {
     id: "an_01",
     creator: {
@@ -89,14 +91,42 @@ const mockAnalyses: Analysis[] = [
   },
 ]
 
+/** Deterministic mock series that falls by roughly what the lift implies. */
+function makeTrend(lift: number, salt: number) {
+  const end = 1 / (1 + lift / 100)
+  return Array.from({ length: 20 }, (_, i) => {
+    const t = i / 19
+    return Math.round((1 - t * (1 - end)) * 100 + Math.sin(i * 1.7 + salt) * 7)
+  })
+}
+
+const mockAnalyses: Analysis[] = seed.map((a) => ({
+  ...a,
+  trend:
+    a.status === "completed" && a.performanceLift !== null
+      ? makeTrend(a.performanceLift, a.creator.name.length)
+      : undefined,
+}))
+
 export async function getAnalysis(id: string) {
   return mockAnalyses.find((a) => a.id === id)
 }
 
-export async function getDashboard() {
-  const analyses = [...mockAnalyses].sort((a, b) =>
+export async function listAnalyses() {
+  return [...mockAnalyses].sort((a, b) =>
     b.startedAt.localeCompare(a.startedAt)
   )
+}
+
+/** Finished analyses open the snapshot; everything else shows progress. */
+export function analysisHref(a: Analysis) {
+  return a.status === "completed"
+    ? `/analyses/${a.id}/snapshot?name=${encodeURIComponent(a.creator.name)}`
+    : `/analyses/${a.id}`
+}
+
+export async function getDashboard() {
+  const analyses = await listAnalyses()
   const lifts = analyses.flatMap((a) =>
     a.status === "completed" && a.performanceLift !== null
       ? [a.performanceLift]

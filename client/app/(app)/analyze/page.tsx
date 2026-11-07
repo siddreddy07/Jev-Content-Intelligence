@@ -46,7 +46,7 @@ export default async function AnalyzePage({
         <h2 id="learn" className="text-base font-semibold">
           What you&apos;ll learn
         </h2>
-        <ul className="grid gap-5 sm:grid-cols-3">
+        <ul className="grid gap-5 @xl/main:grid-cols-3">
           {learn.map(({ icon: Icon, title, detail }) => (
             <li key={title} className="space-y-2">
               <span className="flex size-9 items-center justify-center rounded-md bg-accent text-accent-foreground">

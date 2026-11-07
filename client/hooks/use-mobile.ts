@@ -16,3 +16,20 @@ export function useIsMobile() {
     () => false
   )
 }
+
+const COMPACT_QUERY = "(max-width: 1023px)"
+
+function subscribeCompact(onChange: () => void) {
+  const mql = window.matchMedia(COMPACT_QUERY)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
+}
+
+/** Phones and tablets: drawers open from the bottom here. */
+export function useIsCompact() {
+  return React.useSyncExternalStore(
+    subscribeCompact,
+    () => window.matchMedia(COMPACT_QUERY).matches,
+    () => false
+  )
+}
