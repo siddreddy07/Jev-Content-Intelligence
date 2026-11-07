@@ -407,3 +407,26 @@ export function getSnapshot() {
 }
 
 export type Snapshot = ReturnType<typeof getSnapshot>
+
+export type Performance = "outperforming" | "on-par" | "underperforming"
+
+export const PERFORMANCE: Record<Performance, string> = {
+  outperforming: "Outperforming",
+  "on-par": "On par",
+  underperforming: "Underperforming",
+}
+
+/** Views against the channel average across all analyzed videos. */
+export function classifyVideos() {
+  const average = avg(videos.map((x) => x.views))
+  return videos.map((x) => ({
+    ...x,
+    performance: (x.views >= average * 1.15
+      ? "outperforming"
+      : x.views <= average * 0.85
+        ? "underperforming"
+        : "on-par") as Performance,
+  }))
+}
+
+export type ClassifiedVideo = ReturnType<typeof classifyVideos>[number]

@@ -189,6 +189,12 @@ export function AnalysisProgress({
               </p>
             </div>
             <Progress value={percent} aria-label="Overall analysis progress" />
+            {run.status === "running" && (
+              <p className="text-sm text-muted-foreground">
+                You can leave this page. The analysis keeps running and appears
+                in Recent analyses on the dashboard.
+              </p>
+            )}
           </section>
 
           {run.status === "completed" && (
@@ -260,11 +266,11 @@ export function AnalysisProgress({
                       <XCircle />
                       <AlertTitle>{stage.title} failed</AlertTitle>
                       <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
-                        {failureReason ?? FAIL_MESSAGE} Earlier stages are
-                        saved, so a retry resumes from here.
+                        {failureReason ?? FAIL_MESSAGE} Your progress is saved,
+                        so it picks up from here.
                         <Button size="sm" variant="outline" onClick={retry}>
                           <RotateCcw className="size-4" />
-                          Retry stage
+                          Try again
                         </Button>
                       </AlertDescription>
                     </Alert>

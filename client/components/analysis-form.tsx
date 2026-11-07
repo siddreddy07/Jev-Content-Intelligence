@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Link2 } from "lucide-react"
+import { ArrowRight, CheckCircle2, ClipboardPaste, Link2 } from "lucide-react"
 
 import { submitAnalysis } from "@/lib/data"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
@@ -15,115 +16,207 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 
-/** Returns an error message, or the normalized channel URL. */
-function parseChannelUrl(input: string): { error: string } | { url: string } {
+type Parsed = { error: string } | { url: string; label: string }
+
+/** Validates a YouTube channel link; returns the cleaned link and a display name. */
+function parseChannelUrl(input: string): Parsed {
   const raw = input.trim()
-  if (!raw) return { error: "Enter a YouTube channel URL." }
+  if (!raw) return { error: "Paste a YouTube channel link to continue." }
 
   let url: URL
   try {
     url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
   } catch {
-    return { error: "That doesn't look like a URL." }
+    return {
+      error:
+        "That doesn't look like a link. Copy it from your browser's address bar.",
+    }
   }
   if (
     !["youtube.com", "www.youtube.com", "m.youtube.com"].includes(
       url.hostname.toLowerCase()
     )
   ) {
-    return { error: "Use a youtube.com channel URL." }
+    return {
+      error:
+        "That isn't a YouTube link. Use a link that starts with youtube.com.",
+    }
   }
 
   const [first, second] = url.pathname.split("/").filter(Boolean)
   const base = "https://www.youtube.com"
 
   if (first?.startsWith("@") && first.length > 1)
-    return { url: `${base}/${first}` }
+    return { url: `${base}/${first}`, label: first }
   if (first === "channel" && /^UC[\w-]{22}$/.test(second ?? ""))
-    return { url: `${base}/channel/${second}` }
+    return { url: `${base}/channel/${second}`, label: "this channel" }
   if ((first === "c" || first === "user") && second)
-    return { url: `${base}/${first}/${second}` }
+    return { url: `${base}/${first}/${second}`, label: second }
   if (["watch", "shorts", "playlist"].includes(first ?? ""))
     return {
-      error: "That's a video or playlist link. Paste the channel URL instead.",
+      error:
+        "That link goes to a video or playlist. Open the channel's page and copy that link instead.",
     }
 
-  return { error: "Use a channel URL like youtube.com/@handle." }
+  return {
+    error:
+      "We couldn't find a channel in that link. It should look like youtube.com/@channelname.",
+  }
 }
+
+const samples = [
+  { name: "Maya Okafor", link: "youtube.com/@mayabuilds" },
+  { name: "Dan Reyes", link: "youtube.com/@danreyesfit" },
+]
 
 export function AnalysisForm({ initialUrl = "" }: { initialUrl?: string }) {
   const router = useRouter()
   const [value, setValue] = useState(initialUrl)
-  const [error, setError] = useState<string>()
-  const [state, setState] = useState<"editing" | "submitting">("editing")
+  const [touched, setTouched] = useState(initialUrl !== "")
+  const [submitError, setSubmitError] = useState<string>()
+  const [submitting, setSubmitting] = useState(false)
 
-  function validate() {
-    const result = parseChannelUrl(value)
-    setError("error" in result ? result.error : undefined)
-    return result
+  const parsed = parseChannelUrl(value)
+  const valid = !("error" in parsed)
+  // Show errors only once the user has typed and left the field, or tried to submit.
+  const error = touched && !valid ? parsed.error : submitError
+
+  async function paste() {
+    try {
+      setValue(await navigator.clipboard.readText())
+      setTouched(true)
+      setSubmitError(undefined)
+    } catch {
+      // Clipboard access can be blocked; typing still works.
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const result = validate()
-    if ("error" in result) return
+    setTouched(true)
+    if (!valid) return
 
-    setState("submitting")
+    setSubmitting(true)
+    setSubmitError(undefined)
     try {
-      const { id } = await submitAnalysis(result.url)
+      const { id } = await submitAnalysis(parsed.url)
       // Stay in the submitting state while navigating to avoid a double submit.
-      router.push(`/analyses/${id}?channel=${encodeURIComponent(result.url)}`)
+      router.push(`/analyses/${id}?channel=${encodeURIComponent(parsed.url)}`)
     } catch {
-      setError(
-        "Couldn't start the analysis. Check your connection and try again."
+      setSubmitError(
+        "We couldn't start the analysis. Check your connection and try again."
       )
-      setState("editing")
+      setSubmitting(false)
     }
   }
 
-  const submitting = state === "submitting"
-
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-4">
-      <Field data-invalid={error ? true : undefined}>
-        <FieldLabel htmlFor="channel-url">YouTube channel URL</FieldLabel>
-        <InputGroup className="h-11 bg-card">
-          <InputGroupAddon>
-            <Link2 />
-          </InputGroupAddon>
-          <InputGroupInput
-            id="channel-url"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value)
-              setError(undefined)
-            }}
-            onBlur={() => value.trim() && validate()}
-            placeholder="youtube.com/@creator"
-            inputMode="url"
-            autoComplete="off"
-            autoFocus
-            disabled={submitting}
-            aria-invalid={error ? true : undefined}
-          />
-        </InputGroup>
-        {error ? (
-          <FieldError>{error}</FieldError>
-        ) : (
-          <FieldDescription>
-            Accepts @handle, /channel/ID, /c/name and /user/name links.
-          </FieldDescription>
-        )}
-      </Field>
+    <Card>
+      <form onSubmit={onSubmit} noValidate className="contents">
+        <CardContent className="space-y-4">
+          <Field data-invalid={error ? true : undefined}>
+            <FieldLabel htmlFor="channel-url" className="text-base">
+              Which channel?
+            </FieldLabel>
+            <InputGroup className="h-12 bg-background">
+              <InputGroupAddon>
+                <Link2 />
+              </InputGroupAddon>
+              <InputGroupInput
+                id="channel-url"
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value)
+                  setSubmitError(undefined)
+                }}
+                onBlur={() => value.trim() && setTouched(true)}
+                placeholder="Paste a channel link"
+                inputMode="url"
+                autoComplete="off"
+                autoFocus
+                disabled={submitting}
+                aria-invalid={error ? true : undefined}
+                className="text-base"
+              />
+              {!value && (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton onClick={paste} disabled={submitting}>
+                    <ClipboardPaste />
+                    Paste
+                  </InputGroupButton>
+                </InputGroupAddon>
+              )}
+            </InputGroup>
 
-      <Button type="submit" size="lg" disabled={submitting}>
-        {submitting && <Spinner data-icon="inline-start" />}
-        {submitting ? "Starting analysis" : "Start analysis"}
-      </Button>
-    </form>
+            {error ? (
+              <FieldError>{error}</FieldError>
+            ) : valid ? (
+              <p
+                role="status"
+                className="flex items-center gap-1.5 text-sm text-success"
+              >
+                <CheckCircle2 className="size-4" aria-hidden />
+                Found {parsed.label}. Ready to analyze.
+              </p>
+            ) : (
+              <FieldDescription>
+                On YouTube, open the channel&apos;s page and copy the address
+                from your browser.
+              </FieldDescription>
+            )}
+          </Field>
+
+          {!value && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">No link handy? Try</span>
+              {samples.map((s) => (
+                <Button
+                  key={s.name}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setValue(s.link)
+                    setTouched(true)
+                  }}
+                >
+                  {s.name}
+                </Button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter className="flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            We&apos;ll study their 10 most-viewed and 10 newest videos. It takes
+            about 10 minutes and keeps running if you leave the page.
+          </p>
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submitting}
+            className="shrink-0"
+          >
+            {submitting ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                Starting
+              </>
+            ) : (
+              <>
+                Analyze channel
+                <ArrowRight className="size-4" />
+              </>
+            )}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }

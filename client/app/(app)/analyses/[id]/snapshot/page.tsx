@@ -280,21 +280,21 @@ export default async function SnapshotPage({
       value: compact.format(s.comparison.latestAvg),
     },
     {
-      label: "Performance lift",
+      label: "Best vs recent",
       value: lift(s.comparison.lift),
-      hint: "Top 10 vs latest 10",
+      hint: "Top 10 earn this much more than the latest 10",
     },
     {
-      label: "Hook alignment",
+      label: "Recent videos using winning openings",
       value: `${s.alignment.score}%`,
-      hint: "Latest vs top 10 rate",
+      hint: "Compared with the top 10",
     },
   ]
 
   const nav = [
     ["comparison", "Comparison"],
-    ["hooks", "Hook patterns"],
-    ["alignment", "Alignment"],
+    ["hooks", "Openings that work"],
+    ["alignment", "Recent vs best"],
     ["content", "Content patterns"],
     ["blind-spots", "Blind spots"],
     ["evidence", "Evidence"],
@@ -316,6 +316,10 @@ export default async function SnapshotPage({
             Snapshot of {s.transcribed} videos, generated{" "}
             {date.format(new Date(s.generatedAt))}
             {analysis && ` · ${analysis.creator.handle}`}
+          </p>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            A hook is what a creator says in the first seconds of a video. This
+            page shows which hooks earned the most views.
           </p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
             <Source kind="measured" /> Calculated from YouTube data and
@@ -389,7 +393,7 @@ export default async function SnapshotPage({
 
       <Section
         id="hooks"
-        title="Winning hook patterns"
+        title="Openings that work"
         source={<Source kind="measured" />}
         note="Counts and views are measured. Each video's hook category is assigned by AI from its opening line. Lift compares a pattern's average views with the channel average."
       >
@@ -471,7 +475,7 @@ export default async function SnapshotPage({
 
       <Section
         id="alignment"
-        title="Hook alignment"
+        title="Are recent videos still using them?"
         source={<Source kind="measured" />}
         note="How often each group opens with a winning pattern."
       >

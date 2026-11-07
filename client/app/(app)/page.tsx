@@ -51,13 +51,13 @@ export default async function DashboardPage() {
   const statItems = [
     { label: "Creators analyzed", value: String(stats.creatorsAnalyzed) },
     {
-      label: "Videos transcribed",
+      label: "Videos reviewed",
       value: compact.format(stats.videosAnalyzed),
     },
     {
-      label: "Average hook lift",
+      label: "Best vs recent videos",
       value: stats.averageLift === null ? "None yet" : lift(stats.averageLift),
-      hint: "Top 10 vs latest 10 views",
+      hint: "How much more the best 10 earn than the newest 10",
     },
     { label: "In progress", value: String(stats.inProgress) },
   ]
@@ -69,8 +69,8 @@ export default async function DashboardPage() {
           Which creator&apos;s opening lines do you want to understand?
         </h1>
         <p className="max-w-xl text-muted-foreground">
-          Paste a channel URL. Jev compares their best and latest videos to show
-          which spoken hooks win.
+          Paste a channel link. Jev compares their best and newest videos to
+          show which opening lines win.
         </p>
         {/* Plain GET form: /analyze reads ?url= and owns the validation. */}
         <form
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
             className="h-10 bg-card"
           />
           <Button type="submit" className="h-10 gap-2">
-            Analyze creator
+            Analyze channel
             <ArrowRight className="size-4" />
           </Button>
         </form>
@@ -119,13 +119,13 @@ export default async function DashboardPage() {
               </EmptyMedia>
               <EmptyTitle>No analyses yet</EmptyTitle>
               <EmptyDescription>
-                Analyze a creator to see which spoken hooks drive their best
+                Analyze a channel to see which opening lines drive its best
                 videos.
               </EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
               <Button asChild size="sm">
-                <Link href="/analyze">Analyze a creator</Link>
+                <Link href="/analyze">Analyze a channel</Link>
               </Button>
             </EmptyContent>
           </Empty>
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                 <TableHead className="hidden text-right sm:table-cell">
                   Videos
                 </TableHead>
-                <TableHead className="text-right">Hook lift</TableHead>
+                <TableHead className="text-right">Best vs recent</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
                   Started
                 </TableHead>
@@ -146,7 +146,7 @@ export default async function DashboardPage() {
             </TableHeader>
             <TableBody>
               {analyses.map((a) => (
-                <TableRow key={a.id}>
+                <TableRow key={a.id} className="relative hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="size-9">
@@ -160,7 +160,7 @@ export default async function DashboardPage() {
                       <div className="min-w-0">
                         <Link
                           href={`/analyses/${a.id}`}
-                          className="block truncate font-medium hover:underline"
+                          className="block truncate font-medium after:absolute after:inset-0 hover:underline focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                         >
                           {a.creator.name}
                         </Link>

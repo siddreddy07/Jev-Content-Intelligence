@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Button asChild size="sm" className="w-full justify-start gap-2">
               <Link href="/analyze">
                 <Plus className="size-4" />
-                Analyze a creator
+                Analyze a channel
               </Link>
             </Button>
           </SidebarGroup>

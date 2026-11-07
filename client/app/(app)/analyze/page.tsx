@@ -1,18 +1,26 @@
 import type { Metadata } from "next"
-import { Clock } from "lucide-react"
+import { GitCompareArrows, Mic, Wrench } from "lucide-react"
 
 import { AnalysisForm } from "@/components/analysis-form"
 
-export const metadata: Metadata = { title: "New analysis" }
+export const metadata: Metadata = { title: "Analyze a channel" }
 
-const covers = [
-  ["Top 10 videos", "Highest-viewed videos, the baseline for what wins."],
-  ["Latest 10 videos", "Most recent uploads, compared against that baseline."],
-  [
-    "Spoken hooks",
-    "The opening seconds of each video are transcribed and classified.",
-  ],
-  ["Snapshot", "Hook patterns, performance lift and blind spots."],
+const learn = [
+  {
+    icon: Mic,
+    title: "What works",
+    detail: "The opening lines behind their most-viewed videos.",
+  },
+  {
+    icon: GitCompareArrows,
+    title: "What changed",
+    detail: "How their newest videos compare with their best.",
+  },
+  {
+    icon: Wrench,
+    title: "What to fix",
+    detail: "Where recent videos drift away, with examples.",
+  },
 ]
 
 export default async function AnalyzePage({
@@ -23,37 +31,33 @@ export default async function AnalyzePage({
   const { url } = await searchParams
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16">
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold">Analyze a creator</h1>
-          <p className="max-w-lg text-muted-foreground">
-            Paste a channel URL to find the spoken hooks behind their best
-            videos.
-          </p>
-        </div>
-        <div className="max-w-xl">
-          <AnalysisForm initialUrl={typeof url === "string" ? url : ""} />
-        </div>
+    <div className="mx-auto max-w-2xl space-y-10">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold">Analyze a YouTube channel</h1>
+        <p className="text-muted-foreground">
+          See which opening lines make a creator&apos;s videos win, and whether
+          their newest videos still use them.
+        </p>
       </div>
 
-      <aside aria-labelledby="covers" className="space-y-5">
-        <h2 id="covers" className="text-base font-semibold">
-          What this analysis covers
+      <AnalysisForm initialUrl={typeof url === "string" ? url : ""} />
+
+      <section aria-labelledby="learn" className="space-y-4">
+        <h2 id="learn" className="text-base font-semibold">
+          What you&apos;ll learn
         </h2>
-        <ul className="divide-y border-y">
-          {covers.map(([title, detail]) => (
-            <li key={title} className="space-y-0.5 py-3">
+        <ul className="grid gap-5 sm:grid-cols-3">
+          {learn.map(({ icon: Icon, title, detail }) => (
+            <li key={title} className="space-y-2">
+              <span className="flex size-9 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                <Icon className="size-4" aria-hidden />
+              </span>
               <p className="text-sm font-medium">{title}</p>
               <p className="text-sm text-muted-foreground">{detail}</p>
             </li>
           ))}
         </ul>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="size-4" aria-hidden />8 processing stages, about 8
-          to 12 minutes.
-        </p>
-      </aside>
+      </section>
     </div>
   )
 }
