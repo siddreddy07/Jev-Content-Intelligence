@@ -1,0 +1,9 @@
+# dependencies & build output (backend stack to be decided)
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
